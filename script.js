@@ -84,10 +84,37 @@ if (savedUser) {
     loginBox.style.display = "none";
   }
 }
-// BOTONES DEL PANEL SUPERIOR
-document.getElementById("achBtn").onclick = () => RG.openAchievementsPanel();
-document.getElementById("rankBtn").onclick = () => RG.openLeaderboard("global");
-document.getElementById("openLoginBtn").onclick = () => {
+/* -------------- Inicialización visual -------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  loadPlayer();
+  if (PLAYER.username) playerNameEl.textContent = `👤 ${PLAYER.username}`;
+});
+// ✅ Exponer funciones globales para poder llamarlas desde script.js
+window.savePlayer = savePlayer;
+window.openAchievementsPanel = openAchievementsPanel;
+window.openLeaderboard = openLeaderboard;
+window.submitScore = submitScore;
+window.unlockAchievement = unlockAchievement;
+// ✅ BOTONES DEL PANEL SUPERIOR DERECHA
+const btnLogin = document.getElementById("openLoginBtn");
+const btnAchievements = document.getElementById("openAchievementsBtn");
+const btnRanking = document.getElementById("openRankingBtn");
+
+if (btnLogin) {
+  btnLogin.addEventListener("click", () => {
     document.getElementById("loginBox").style.display = "flex";
-};
+  });
+}
+
+if (btnAchievements) {
+  btnAchievements.addEventListener("click", () => {
+    window.openAchievementsPanel();
+  });
+}
+
+if (btnRanking) {
+  btnRanking.addEventListener("click", () => {
+    window.openLeaderboard("global");
+  });
+}
 
