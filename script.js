@@ -28,13 +28,17 @@ document.getElementById("openLoginBtn").addEventListener("click", () => {
 window.openAchievementsPanel = () => {
   window.location.href = "achievements.html";
 };
-
+btnAchievements.addEventListener("click", () => {
+    window.location.href = "achievements.html";
+});
 // ===================== RANKING ======================
 
 window.openLeaderboard = () => {
   window.location.href = "ranking.html";
 };
-
+btnRanking.addEventListener("click", () => {
+    window.location.href = "ranking.html";
+});
 // ===================== MODAL DE JUEGOS ======================
 
 const modal = document.getElementById("gameModal");
