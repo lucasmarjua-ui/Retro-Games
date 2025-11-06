@@ -47,3 +47,38 @@ document.addEventListener('wheel', (e) => {
     behavior: 'smooth' // hace scroll suave
   });
 });
+// ------ LOGIN / IDENTIFICACIÓN ------
+const loginBtn = document.getElementById("loginButton");
+const usernameField = document.getElementById("usernameInput");
+const welcomeText = document.getElementById("welcomeUser");
+const loginBox = document.getElementById("loginBox");
+
+if (loginBtn) {
+  loginBtn.addEventListener("click", () => {
+    const name = usernameField.value.trim();
+
+    if (name === "") {
+      alert("⚠️ Debes escribir un nombre");
+      return;
+    }
+
+    // Guardamos el nombre en localStorage
+    localStorage.setItem("retro-username", name);
+
+    // Recargamos para que aparezca en el menú
+    location.reload();
+  });
+}
+
+// Mostrar nombre si ya está identificado
+const savedUser = localStorage.getItem("retro-username");
+
+if (savedUser) {
+  if (welcomeText) {
+    welcomeText.innerText = `👤 Bienvenido, ${savedUser}`;
+  }
+  if (loginBox) {
+    loginBox.style.display = "none";
+  }
+}
+
