@@ -17,39 +17,40 @@
   </div>
 
   <script type="module">
-    import { supabase } from "./supabaseClient.js";
+  import { supabase } from "./supabaseClient.js";
 
-    const username = localStorage.getItem("retro-username");
-    document.getElementById("playerName").innerText = `Jugador: ${username}`;
+  const username = localStorage.getItem("retro-username");
+  document.getElementById("playerName").innerText = `Jugador: ${username}`;
 
-    async function loadAchievements() {
-      const { data, error } = await supabase
-        .from("achievements")
-        .select("*")
-        .eq("user_id", username)
-        .order("created_at", { ascending: false });
+  async function loadAchievements() {
+    const { data, error } = await supabase
+      .from("achievements_unlocked")
+      .select("achievement_name, created_at")
+      .eq("username", username)
+      .order("created_at", { ascending: false });
 
-      const list = document.getElementById("achievementsList");
-      list.innerHTML = "";
+    const list = document.getElementById("achievementsList");
+    list.innerHTML = "";
 
-      if (data.length === 0) {
-        list.innerHTML = "<p>Todavía no has desbloqueado logros 😢</p>";
-        return;
-      }
-
-      data.forEach(row => {
-        const li = document.createElement("li");
-        li.classList.add("achievement-card");
-        li.innerHTML = `
-          <span class="emoji">✅</span>
-          <strong>${row.achievement}</strong>
-          <small>${new Date(row.created_at).toLocaleString()}</small>
-        `;
-        list.appendChild(li);
-      });
+    if (!data || data.length === 0) {
+      list.innerHTML = "<p>Aún no has desbloqueado logros 😢</p>";
+      return;
     }
 
-    loadAchievements();
-  </script>
+    data.forEach(row => {
+      const li = document.createElement("li");
+      li.classList.add("achievement-card");
+      li.innerHTML = `
+        <span class="emoji">🏆</span>
+        <strong>${row.achievement_name}</strong>
+        <small>${new Date(row.created_at).toLocaleString()}</small>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  loadAchievements();
+</script>
+
 </body>
 </html>
