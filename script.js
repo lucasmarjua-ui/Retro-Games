@@ -1,3 +1,6 @@
+console.log("✅ script.js cargado");
+
+
 const modal = document.getElementById('gameModal');
 const gameFrame = document.getElementById('gameFrame');
 const closeModal = document.getElementById('closeModal');
