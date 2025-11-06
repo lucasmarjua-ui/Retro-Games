@@ -25,30 +25,36 @@
   </div>
 
   <script type="module">
-    import { supabase } from "./supabaseClient.js";
+  import { supabase } from "./supabaseClient.js";
 
-    async function loadRanking() {
-      const { data, error } = await supabase
-        .from("achievements")
-        .select("*")
-        .order("score", { ascending: false });
+  async function loadRanking() {
+    const { data, error } = await supabase
+      .from("scores")
+      .select("username, game_id, score")
+      .order("score", { ascending: false });
 
-      const table = document.getElementById("rankingTable");
-      table.innerHTML = "";
+    const table = document.getElementById("rankingTable");
+    table.innerHTML = "";
 
-      data.forEach((row, index) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>#${index + 1}</td>
-          <td>${row.user_id}</td>
-          <td>${row.achievement}</td>
-          <td>${row.score ?? "-"}</td>
-        `;
-        table.appendChild(tr);
-      });
+    if (!data || data.length === 0) {
+      table.innerHTML = "<tr><td colspan='4'>Sin puntuaciones aún</td></tr>";
+      return;
     }
 
-    loadRanking();
-  </script>
+    data.forEach((row, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>#${index + 1}</td>
+        <td>${row.username}</td>
+        <td>${row.game_id}</td>
+        <td>${row.score}</td>
+      `;
+      table.appendChild(tr);
+    });
+  }
+
+  loadRanking();
+</script>
+
 </body>
 </html>
