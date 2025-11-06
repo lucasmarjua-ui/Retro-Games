@@ -267,3 +267,39 @@ header h1 {
     font-size: 11px;
     font-family: "Press Start 2P", monospace;
 }
+/* 🔥 PANEL FIJO ARRIBA DERECHA */
+#uiPanel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ✅ Botones estilo arcade */
+.retroBtn {
+    padding: 8px 12px;
+    font-family: "Press Start 2P", monospace;
+    background: #111;
+    color: #ffcc00;
+    border: 2px solid #ffcc00;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    transition: 0.2s;
+}
+
+.retroBtn:hover {
+    background: #ffcc00;
+    color: #111;
+}
+
+#playerName {
+    font-family: "Press Start 2P", monospace;
+    font-size: 12px;
+    color: white;
+}
+
