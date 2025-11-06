@@ -60,7 +60,39 @@
             <iframe id="gameFrame" src="" frameborder="0"></iframe>
         </div>
     </div>
-    
+    <!-- Login / Perfil minimal -->
+<div id="playerPanel" style="position:fixed;top:12px;right:12px;z-index:999;">
+  <button id="openLoginBtn" class="btn">Identifícate</button>
+  <span id="playerName" style="margin-left:8px;"></span>
+</div>
+
+<!-- Popup logro -->
+<div id="achievementPopup" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:none;padding:12px;border:3px solid #a0522d;background:#fff3e0;border-radius:8px;font-family:'Press Start 2P';"></div>
+
+<!-- Panel Logros -->
+<div id="achievementsPanel" class="overlay hidden">
+  <h2>Arcade Awards</h2>
+  <ul id="achievementsList" style="list-style:none;padding:0;"></ul>
+  <button id="closeAchievements" class="btn">Cerrar</button>
+</div>
+
+<!-- Panel Ranking -->
+<div id="leaderboardPanel" class="overlay hidden">
+  <h2>Ranking Global</h2>
+  <div id="leaderboardContent"></div>
+  <button id="closeLeaderboard" class="btn">Cerrar</button>
+</div>
+
+<!-- Modal Login -->
+<div id="loginModal" class="overlay hidden">
+  <h2>Identifícate</h2>
+  <input id="loginName" placeholder="Tu apodo (ej: Lucas)" style="padding:8px;border-radius:6px;border:2px solid #a0522d;">
+  <div style="margin-top:12px;">
+    <button id="saveLogin" class="btn">Guardar</button>
+    <button id="closeLogin" class="btn">Cerrar</button>
+  </div>
+</div>
+
 
     <script src="script.js"></script>
     <!-- BLOQUE DE ANUNCIO -->
