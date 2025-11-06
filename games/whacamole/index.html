@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whac-A-Mole Retro Avanzado</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+body{
+  margin:0;
+  background:#f5e6d3;
+  font-family:'Press Start 2P',monospace;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+#hud{
+  margin-bottom:12px;
+  font-size:16px;
+}
+#gameBoard{
+  display:grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-gap:12px;
+  background:#deb887;
+  padding:12px;
+  border:6px solid #a0522d;
+  border-radius:12px;
+}
+.hole{
+  width:100px;
+  height:100px;
+  background:#fff3e0;
+  border-radius:50%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:50px;
+  cursor:pointer;
+  user-select:none;
+  transition: transform 0.2s;
+}
+.hole.active{
+  transform: translateY(-10px);
+}
+.overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,0.85);
+  z-index:50;
+  color:white;
+  text-align:center;
+}
+.hidden{display:none;}
+.btn{
+  background:#a0522d;
+  color:#fff;
+  border:none;
+  padding:10px 18px;
+  border-radius:8px;
+  cursor:pointer;
+  font-family:'Press Start 2P';
+}
+</style>
+</head>
+<body>
+<div id="hud">Puntos: <span id="score">0</span> | Vidas: <span id="lives">3</span></div>
+<div id="gameBoard"></div>
+
+<div id="start" class="overlay">
+  <h2>WHAC-A-MOLE RETRO</h2>
+  <button id="startBtn" class="btn">INICIAR</button>
+</div>
+
+<div id="end" class="overlay hidden">
+  <h2>¡GAME OVER!</h2>
+  <p>Puntos: <span id="finalScore">0</span></p>
+  <button id="restartBtn" class="btn">REINICIAR</button>
+</div>
+
+<script>
+// Sonidos
+const S = {
+  hit: new Audio('music/hit.mp3'),
+  miss: new Audio('games/whac-a-mole/music/miss.wav'),
+  fail: new Audio('music/fail.mp3'),
+  gameover: new Audio('music/gameover.mp3'),
+  bg: new Audio('music/background.mp3')
+};
+S.bg.volume=0.2; S.bg.loop=true;
+S.hit.volume=0.3; S.miss.volume=0.3; S.fail.volume=0.3; S.gameover.volume=0.4;
+
+const boardEl = document.getElementById('gameBoard');
+const startOverlay = document.getElementById('start');
+const endOverlay = document.getElementById('end');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const finalScoreEl = document.getElementById('finalScore');
+
+let holes = [];
+let score = 0;
+let lives = 3;
+let gameInterval;
+let moleTimeout;
+let moleSpeed = 1500; // tiempo inicial de visibilidad del mole
+let moleFrequency = 1200; // tiempo inicial entre moles
+let speedFactor = 0.97; // multiplicador para acelerar gradualmente
+let gameRunning = false;
+
+// Crear 9 hoyos
+function createBoard(){
+  boardEl.innerHTML='';
+  holes = [];
+  for(let i=0;i<9;i++){
+    const hole = document.createElement('div');
+    hole.classList.add('hole');
+    hole.textContent='';
+    hole.addEventListener('click', ()=>hit(hole));
+    boardEl.appendChild(hole);
+    holes.push(hole);
+  }
+}
+
+// Elegir mole o objeto falso
+function getRandomObject(){
+  const rand = Math.random();
+  if(rand < 0.8) return '🐹'; // 80% mole
+  return '💣'; // 20% objeto peligroso
+}
+
+// Aparecer mole u objeto
+function popMole(){
+  if(!gameRunning) return;
+  const index = Math.floor(Math.random()*holes.length);
+  const hole = holes[index];
+  if(hole.classList.contains('active')) return; // evitar overlap
+  const obj = getRandomObject();
+  hole.textContent=obj;
+  hole.classList.add('active');
+
+  moleTimeout = setTimeout(()=>{
+    if(hole.classList.contains('active')){ // no golpeado
+      hole.classList.remove('active');
+      hole.textContent='';
+      if(obj==='🐹'){ // perdió vida al no golpear mole
+        loseLife();
+      }
+    }
+  }, moleSpeed);
+}
+
+// Golpear
+function hit(hole){
+  if(!hole.classList.contains('active')) return;
+  const obj = hole.textContent;
+  hole.textContent='';
+  hole.classList.remove('active');
+
+  if(obj==='🐹'){
+    score++;
+    try{S.hit.currentTime=0;S.hit.play();}catch(e){}
+  } else {
+    loseLife();
+    try{S.fail.currentTime=0;S.fail.play();}catch(e){}
+  }
+  scoreEl.textContent=score;
+
+  // Acelerar gradualmente
+  moleSpeed *= speedFactor;
+  moleFrequency *= speedFactor;
+  clearInterval(gameInterval);
+  gameInterval = setInterval(popMole, moleFrequency);
+}
+
+// Perder vida
+function loseLife(){
+  lives--;
+  livesEl.textContent = lives;
+  if(lives<=0){
+    endGame();
+  }
+}
+
+// Iniciar juego
+function startGame(){
+  startOverlay.classList.add('hidden');
+  endOverlay.classList.add('hidden');
+  createBoard();
+  score=0; lives=3;
+  moleSpeed=1500;
+  moleFrequency=1200;
+  scoreEl.textContent=score;
+  livesEl.textContent=lives;
+  gameRunning=true;
+  try{S.bg.currentTime=0;S.bg.play();}catch(e){}
+  gameInterval = setInterval(popMole, moleFrequency);
+}
+
+// Terminar juego
+function endGame(){
+  gameRunning=false;
+  clearInterval(gameInterval);
+  clearTimeout(moleTimeout);
+  try{S.bg.pause();}catch(e){}
+  try{S.gameover.currentTime=0;S.gameover.play();}catch(e){}
+  finalScoreEl.textContent=score;
+  endOverlay.classList.remove('hidden');
+}
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+</script>
+</body>
+</html>

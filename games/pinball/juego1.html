@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pinball Retro Profesional</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+body { margin:0; background:#f5e8d0; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Press Start 2P', monospace; color:#4b3b2a; overflow:hidden; }
+#gameContainer { position:relative; width:800px; height:500px; border:6px solid #a78b5b; background: linear-gradient(to bottom,#cbae88 0%,#f5e8d0 100%); border-radius:15px; box-shadow: inset 0 0 20px #a78b5b; overflow:hidden; }
+canvas { display:block; background:transparent; }
+#scoreBoard { position:absolute; top:10px; left:10px; font-size:16px; color:#4b3b2a; z-index:10; }
+#gameOver { position:absolute; width:420px; height:260px; background:#f5e8d0; border:5px solid #a78b5b; border-radius:15px; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; box-shadow:0 0 25px #a78b5b; transition: transform 0.3s ease-in-out; z-index:20; }
+#gameOver.show { transform: translate(-50%, -50%) scale(1); }
+#gameOver h2 { margin:0; font-size:20px; }
+#restartBtn { margin-top:20px; padding:12px 25px; font-family:'Press Start 2P', monospace; font-size:14px; background-color:#a3c1ad; border:none; border-radius:10px; cursor:pointer; color:#4b3b2a; transition: all 0.3s; }
+#restartBtn:hover { background-color:#d8a39d; }
+#startScreen { position:absolute; top:0; left:0; width:100%; height:100%; background:#f5e8d0; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:50; }
+#startScreen h1 { font-family:'Press Start 2P', monospace; color:#4b3b2a; margin-bottom:40px; }
+#startScreen button { padding:20px 40px; font-size:16px; cursor:pointer; border-radius:10px; background:#a3c1ad; color:#4b3b2a; border:none; transition: all 0.3s; }
+#startScreen button:hover { background-color:#d8a39d; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div id="scoreBoard">Score: 0 | Record: 0</div>
+    <div id="gameOver">
+        <h2>GAME OVER</h2>
+        <p id="finalScore">Score: 0</p>
+        <p id="highScore">Record: 0</p>
+        <button id="restartBtn">REINICIAR</button>
+    </div>
+    <div id="startScreen">
+        <h1>PINBALL RETRO</h1>
+        <button id="startBtn">INICIAR</button>
+    </div>
+</div>
+
+<audio id="bgMusic" src="sounds/bgMusic.mp3" loop></audio>
+<audio id="bounceSound" src="sounds/bounce.mp3"></audio>
+<audio id="bumperSound" src="sounds/bumper.mp3"></audio>
+<audio id="gameOverSound" src="sounds/gameOver.mp3"></audio>
+
+<script>
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const gameOverDiv=document.getElementById('gameOver');
+const finalScoreEl=document.getElementById('finalScore');
+const highScoreEl=document.getElementById('highScore');
+const restartBtn=document.getElementById('restartBtn');
+const scoreBoard=document.getElementById('scoreBoard');
+const startScreen=document.getElementById('startScreen');
+const startBtn=document.getElementById('startBtn');
+const bgMusic=document.getElementById('bgMusic');
+const bounceSound=document.getElementById('bounceSound');
+const bumperSound=document.getElementById('bumperSound');
+const gameOverSound=document.getElementById('gameOverSound');
+
+bgMusic.volume=0.2; bounceSound.volume=0.4; bumperSound.volume=0.5; gameOverSound.volume=0.6;
+
+let paddle={width:140,height:15,x:canvas.width/2-70,y:canvas.height-35};
+let balls=[{x:canvas.width/2,y:canvas.height/2,radius:12,dx:3,dy:-3,speedIncrement:0.00015,color:'#4b3b2a'}];
+let bumpers=[
+    {x:200,y:180,radius:28,baseColor:'#ff3b3b',effectRadius:0},
+    {x:600,y:140,radius:32,baseColor:'#ffd700',effectRadius:0},
+    {x:400,y:300,radius:22,baseColor:'#ff4500',effectRadius:0}
+];
+let particles=[];
+let score=0;
+let highScore=localStorage.getItem('pinballHighScore')||0;
+scoreBoard.textContent=`Score: ${score} | Record: ${highScore}`;
+let gameRunning=false;
+let powerUps=[];
+let activePowerUps={multiplier:1,speedModifier:1,extraBalls:0};
+
+// Movimiento paleta
+canvas.addEventListener('mousemove', e=>{
+    let rect=canvas.getBoundingClientRect();
+    let mouseX=e.clientX-rect.left;
+    paddle.x=mouseX-paddle.width/2;
+    if(paddle.x<0)paddle.x=0;
+    if(paddle.x+paddle.width>canvas.width)paddle.x=canvas.width-paddle.width;
+});
+
+// Reiniciar
+function restartGame(){
+    balls=[{x:canvas.width/2,y:canvas.height/2,dx:3,dy:-3,radius:12,color:'#4b3b2a',speedIncrement:0.00015}];
+    score=0; bumpers.forEach(b=>b.effectRadius=0); particles=[]; powerUps=[];
+    activePowerUps={multiplier:1,speedModifier:1,extraBalls:0};
+    gameRunning=true; gameOverDiv.classList.remove('show');
+    scoreBoard.textContent=`Score: ${score} | Record: ${highScore}`;
+    bgMusic.currentTime=0; bgMusic.play();
+    spawnPowerUp();
+    requestAnimationFrame(update);
+}
+restartBtn.addEventListener('click', restartGame);
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && !gameRunning) restartGame(); });
+
+// Start Screen
+startBtn.addEventListener('click', ()=>{
+    startScreen.style.display='none';
+    bgMusic.play();
+    gameRunning=true;
+    spawnPowerUp();
+    update();
+});
+
+// Dibujar
+function drawPaddle(){ ctx.fillStyle='#a78b5b'; ctx.shadowColor='#000'; ctx.shadowBlur=5; ctx.fillRect(paddle.x,paddle.y,paddle.width,paddle.height); ctx.shadowBlur=0; }
+function drawBall(ball){ ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.radius,0,Math.PI*2); ctx.fillStyle=ball.color; ctx.shadowColor='#fff'; ctx.shadowBlur=8; ctx.fill(); ctx.shadowBlur=0; ctx.closePath(); }
+function drawBumpers(){ bumpers.forEach(b=>{ ctx.beginPath(); let radius=b.radius+b.effectRadius; ctx.arc(b.x,b.y,radius,0,Math.PI*2); ctx.fillStyle=b.baseColor; ctx.shadowColor='#fff'; ctx.shadowBlur=15*b.effectRadius/10; ctx.fill(); ctx.shadowBlur=0; ctx.closePath(); if(b.effectRadius>0)b.effectRadius-=0.5; }); }
+function drawParticles(){ particles.forEach((p,i)=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill(); ctx.closePath(); p.x+=p.dx; p.y+=p.dy; p.life--; if(p.life<=0)particles.splice(i,1); }); }
+
+// Power-Ups
+function spawnPowerUp(){
+    const emojis=['💎','🔥','⚡','🐢','🚀'];
+    const effect=['x2','x3','extra','slow','fast'];
+    const index=Math.floor(Math.random()*emojis.length);
+    const pu={x:50+Math.random()*(canvas.width-100),y:50+Math.random()*(canvas.height-150),emoji:emojis[index],effect:effect[index],radius:20,active:true};
+    powerUps.push(pu);
+    setTimeout(spawnPowerUp,8000+Math.random()*7000);
+}
+function drawPowerUps(){ powerUps.forEach(pu=>{ if(pu.active){ ctx.font='28px Arial'; ctx.fillText(pu.emoji,pu.x-14,pu.y+10); } }); }
+function checkPowerUpCollision(ball){ powerUps.forEach(pu=>{ if(!pu.active)return; const dx=ball.x-pu.x, dy=ball.y-pu.y, dist=Math.sqrt(dx*dx+dy*dy); if(dist<ball.radius+pu.radius){ pu.active=false; activatePowerUp(pu.effect); } }); }
+function activatePowerUp(effect){
+    switch(effect){
+        case 'x2': activePowerUps.multiplier=2; setTimeout(()=>activePowerUps.multiplier=1,10000); break;
+        case 'x3': activePowerUps.multiplier=3; setTimeout(()=>activePowerUps.multiplier=1,10000); break;
+        case 'extra': let newBall={...balls[0],x:balls[0].x+10,y:balls[0].y+10,dx:-balls[0].dx,dy:balls[0].dy}; balls.push(newBall); break;
+        case 'slow': activePowerUps.speedModifier=0.6; setTimeout(()=>activePowerUps.speedModifier=1,10000); break;
+        case 'fast': activePowerUps.speedModifier=1.5; setTimeout(()=>activePowerUps.speedModifier=1,10000); break;
+    }
+}
+function createParticles(x,y,color){ for(let i=0;i<8;i++){ particles.push({x:x,y:y,dx:(Math.random()-0.5)*4,dy:(Math.random()-0.5)*4,size:Math.random()*3+2,life:30+Math.random()*20,color:color}); } }
+
+function checkBumperCollision(ball){ bumpers.forEach(b=>{ let dx=ball.x-b.x, dy=ball.y-b.y, dist=Math.sqrt(dx*dx+dy*dy); if(dist<ball.radius+b.radius){ let nx=dx/dist, ny=dy/dist, dot=ball.dx*nx+ball.dy*ny; ball.dx-=2*dot*nx; ball.dy-=2*dot*ny; b.effectRadius=8; score+=1*activePowerUps.multiplier; scoreBoard.textContent=`Score: ${score} | Record: ${highScore}`; bumperSound.currentTime=0; bumperSound.play(); createParticles(ball.x,ball.y,b.baseColor); let overlap=ball.radius+b.radius-dist; ball.x+=nx*overlap; ball.y+=ny*overlap; } }); }
+
+function update(){
+    if(!gameRunning) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    balls.forEach(ball=>{
+        ball.x+=ball.dx*activePowerUps.speedModifier;
+        ball.y+=ball.dy*activePowerUps.speedModifier;
+
+        if(ball.x+ball.radius>canvas.width || ball.x-ball.radius<0){ ball.dx=-ball.dx; bounceSound.currentTime=0; bounceSound.play(); }
+        if(ball.y-ball.radius<0){ ball.dy=-ball.dy; bounceSound.currentTime=0; bounceSound.play(); }
+
+        if(ball.y+ball.radius>=paddle.y && ball.x>=paddle.x && ball.x<=paddle.x+paddle.width){
+            ball.dy=-ball.dy; ball.y=paddle.y-ball.radius;
+            score+=1*activePowerUps.multiplier; scoreBoard.textContent=`Score: ${score} | Record: ${highScore}`;
+            bounceSound.currentTime=0; bounceSound.play();
+            createParticles(ball.x,ball.y,'#fff');
+        }
+
+        checkBumperCollision(ball);
+        checkPowerUpCollision(ball);
+
+        if(ball.y-ball.radius>canvas.height){
+            balls.splice(balls.indexOf(ball),1);
+        }
+
+        if(ball.dy>0) ball.dy+=ball.speedIncrement; else ball.dy-=ball.speedIncrement;
+        if(ball.dx>0) ball.dx+=ball.speedIncrement; else ball.dx-=ball.speedIncrement;
+    });
+
+    if(balls.length===0){
+        gameRunning=false;
+        bgMusic.pause();
+        gameOverSound.currentTime=0; gameOverSound.play();
+        if(score>highScore){ highScore=score; localStorage.setItem('pinballHighScore',highScore); }
+        finalScoreEl.textContent=`Score: ${score}`;
+        highScoreEl.textContent=`Record: ${highScore}`;
+        gameOverDiv.classList.add('show');
+    }
+
+    drawPaddle();
+    balls.forEach(drawBall);
+    drawBumpers();
+    drawParticles();
+    drawPowerUps();
+    requestAnimationFrame(update);
+}
+</script>
+</body>
+</html>

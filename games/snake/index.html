@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Retro</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4e1c1;
+  --accent: #a37b59;
+  --dark: #5a4231;
+  --pastel: #e9d4b3;
+}
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+canvas {
+  border: 6px solid var(--accent);
+  border-radius: 12px;
+  background: linear-gradient(#f7ead3, #f0d9b3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+#overlay, #gameover {
+  position: absolute;
+  inset: 0;
+  background: rgba(244,225,193,0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+#overlay.hidden, #gameover.hidden { display: none; }
+button {
+  font-family: 'Press Start 2P';
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  cursor: pointer;
+  box-shadow: 0 6px rgba(0,0,0,0.2);
+}
+#hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 20px;
+  color: var(--dark);
+  background: rgba(244,225,193,0.9);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  z-index: 1000;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="600" height="600"></canvas>
+
+<div id="overlay">
+  <h2>SNAKE RETRO</h2>
+  <p>Usa las flechas ↑ ↓ ← → para mover la serpiente</p>
+  <button id="startBtn">Iniciar</button>
+</div>
+
+<div id="gameover" class="hidden">
+  <h2>GAME OVER</h2>
+  <p id="finalScore">Puntos: 0</p>
+  <button id="restartBtn">Reintentar</button>
+</div>
+
+<div id="hud">Puntos: <span id="score">0</span></div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const overlay = document.getElementById("overlay");
+const gameover = document.getElementById("gameover");
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const scoreEl = document.getElementById("score");
+const finalScoreEl = document.getElementById("finalScore");
+
+const box = 20; 
+const rows = canvas.height / box;
+const cols = canvas.width / box;
+
+let snake, food, obstacles;
+let dir, newDir;
+let score = 0;
+let playing = false;
+let gameInterval;
+let speed = 120;
+let speedIncrement = 0.95;
+
+// 🎵 Sonidos
+let bgMusic = new Audio("sounds/bg.mp3"); bgMusic.loop = true;
+let eatSound = new Audio("sounds/eat.mp3");
+let gameOverSound = new Audio("sounds/gameover.mp3");
+
+// --- Inicialización ---
+function init() {
+  snake = [{x: Math.floor(cols/2)*box, y: Math.floor(rows/2)*box}];
+  obstacles = [];
+  spawnFood();
+  dir = "RIGHT"; newDir = "RIGHT";
+  score = 0;
+  speed = 120;
+  scoreEl.textContent = score;
+}
+
+// --- Comida ---
+function spawnFood() {
+  food = {
+    x: Math.floor(Math.random() * cols) * box,
+    y: Math.floor(Math.random() * rows) * box,
+    multiplier: Math.random() < 0.2 ? 2 : 1
+  };
+  while(snake.some(seg => seg.x===food.x && seg.y===food.y) ||
+        obstacles.some(o => o.x===food.x && o.y===food.y)) {
+    food.x = Math.floor(Math.random() * cols) * box;
+    food.y = Math.floor(Math.random() * rows) * box;
+  }
+}
+
+// --- Obstáculos ---
+function spawnObstacle() {
+  let obs = {
+    x: Math.floor(Math.random() * cols) * box,
+    y: Math.floor(Math.random() * rows) * box
+  };
+  while(snake.some(seg => seg.x===obs.x && seg.y===obs.y) ||
+        (food && food.x===obs.x && food.y===obs.y) ||
+        obstacles.some(o => o.x===obs.x && o.y===obs.y)) {
+    obs.x = Math.floor(Math.random() * cols) * box;
+    obs.y = Math.floor(Math.random() * rows) * box;
+  }
+  obstacles.push(obs);
+}
+
+// --- Dibujar ---
+function draw() {
+  // fondo
+  ctx.fillStyle = "#f4e1c1";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // comida
+  ctx.font = box + "px Arial"; // tamaño igual al box
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(food.multiplier === 2 ? "🍎" : "🍌", food.x, food.y); // fruta x2 o normal
+
+  // obstáculos
+  obstacles.forEach(o => {
+    ctx.fillText("🪨", o.x, o.y); // emoji de roca para obstáculo
+  });
+
+  // serpiente
+  ctx.fillStyle = "#5a4231";
+  snake.forEach(seg => ctx.fillRect(seg.x, seg.y, box, box));
+}
+
+
+// --- Movimiento ---
+document.addEventListener("keydown", e => {
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){
+    e.preventDefault(); // evita scroll
+  }
+  if(e.key === "ArrowUp" && dir !== "DOWN") newDir = "UP";
+  else if(e.key === "ArrowDown" && dir !== "UP") newDir = "DOWN";
+  else if(e.key === "ArrowLeft" && dir !== "RIGHT") newDir = "LEFT";
+  else if(e.key === "ArrowRight" && dir !== "LEFT") newDir = "RIGHT";
+});
+
+// --- Actualizar ---
+function update() {
+  if(!playing) return;
+
+  dir = newDir;
+  let head = {...snake[0]};
+
+  if(dir==="LEFT") head.x -= box;
+  else if(dir==="RIGHT") head.x += box;
+  else if(dir==="UP") head.y -= box;
+  else if(dir==="DOWN") head.y += box;
+
+  // choque con paredes, cuerpo u obstáculos
+  if(head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height ||
+     snake.some(seg => seg.x===head.x && seg.y===head.y) ||
+     obstacles.some(o => o.x===head.x && o.y===head.y)) {
+    endGame();
+    return;
+  }
+
+  snake.unshift(head);
+
+  // comer comida
+  if(head.x === food.x && head.y === food.y){
+    score += food.multiplier;
+    scoreEl.textContent = score;
+    eatSound.currentTime = 0; eatSound.play();
+    spawnFood();
+  } else {
+    snake.pop();
+  }
+
+  // generar obstáculos cada 3 puntos
+  if(score > 0 && score % 3 === 0 && obstacles.length < score) {
+    spawnObstacle();
+  }
+
+  // aumentar velocidad cada 5 puntos
+  if(score > 0 && score % 5 === 0) {
+    clearInterval(gameInterval);
+    speed = Math.max(50, speed*speedIncrement);
+    gameInterval = setInterval(update, speed);
+  }
+
+  draw();
+}
+
+// --- Iniciar ---
+function startGame() {
+  overlay.classList.add("hidden");
+  gameover.classList.add("hidden");
+  bgMusic.currentTime = 0; bgMusic.play().catch(()=>{});
+  playing = true;
+  init();
+  clearInterval(gameInterval);
+  gameInterval = setInterval(update, speed);
+}
+
+// --- Fin de juego ---
+function endGame() {
+  playing = false;
+  bgMusic.pause();
+  gameOverSound.currentTime = 0; gameOverSound.play();
+  clearInterval(gameInterval);
+  finalScoreEl.textContent = score;
+  gameover.classList.remove("hidden");
+}
+
+startBtn.addEventListener("click", startGame);
+restartBtn.addEventListener("click", startGame);
+</script>
+
+</body>
+</html>

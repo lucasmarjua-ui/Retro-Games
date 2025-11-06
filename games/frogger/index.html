@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frogger Retro Arcade + Efectos</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4e1c1;
+  --road:#7c7c7c;
+  --accent:#a37b59;
+  --sidewalk:#efe6cf;
+  --lane-line:#ffffff55;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Press Start 2P',monospace;background:var(--bg);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;}
+canvas{border:6px solid var(--accent);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.25);background:var(--bg);}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(244,225,193,0.95);z-index:50;}
+.hidden{display:none;}
+.btn{background:var(--accent);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-family:'Press Start 2P';}
+#hud{position:absolute;top:12px;left:12px;background:rgba(255,255,255,0.85);padding:8px 12px;border-radius:8px;border:2px solid var(--accent);z-index:60;}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="600" height="600"></canvas>
+
+<div id="start" class="overlay">
+  <h2>FROGGER RETRO ARCADE</h2>
+  <p>La rana empieza en la acera. Usa ↑ ↓ ← →</p>
+  <button id="startBtn" class="btn">INICIAR</button>
+</div>
+
+<div id="end" class="overlay hidden">
+  <h2>GAME OVER</h2>
+  <p>Puntos: <span id="finalScore">0</span></p>
+  <button id="restartBtn" class="btn">REINTENTAR</button>
+</div>
+
+<div id="hud">Puntos: <span id="score">0</span></div>
+
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const startOverlay=document.getElementById('start');
+const endOverlay=document.getElementById('end');
+const startBtn=document.getElementById('startBtn');
+const restartBtn=document.getElementById('restartBtn');
+const scoreEl=document.querySelector('#hud span');
+const finalScoreEl=document.getElementById('finalScore');
+
+const BOX=40;
+const COLS=Math.floor(canvas.width/BOX);
+const ROWS=Math.floor(canvas.height/BOX);
+const SAFE_TOP_ROWS=2;
+const SAFE_BOTTOM_ROWS=2;
+
+const S={
+  bg:new Audio('sounds/bg.mp3'),
+  hit:new Audio('sounds/hit.mp3'),
+  point:new Audio('sounds/point.wav'),
+  
+};
+S.bg.loop=true; S.bg.volume=0.18;
+
+const FROG_HIT_MARGIN=8;
+const CAR_HIT_MARGIN=4;
+
+let frog, lanes, score, playing, raf, difficultyTimer=0;
+const BASE_LANE_SPEED=1.5;
+const MIN_GAP=120;
+const CAR_EMOJIS=['🚛','🚚','🚐','🛻'];
+let particles=[];
+
+function rand(min,max){return Math.random()*(max-min)+min;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+// --- PARTICULAS ---
+function createParticles(x,y,color,count=6){
+  for(let i=0;i<count;i++){
+    particles.push({
+      x:x+BOX/2,
+      y:y+BOX/2,
+      vx:rand(-2,2),
+      vy:rand(-2,2),
+      life:rand(15,25),
+      color
+    });
+  }
+}
+
+function updateParticles(){
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.life--;
+  });
+  particles=particles.filter(p=>p.life>0);
+}
+
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,3,0,2*Math.PI); ctx.fill();
+  });
+}
+
+// --- INIT ---
+function placeFrog(){frog={col:Math.floor(COLS/2), x:Math.floor(COLS/2)*BOX, y:(ROWS-SAFE_BOTTOM_ROWS)*BOX, emoji:'🐸'};}
+
+function createInitialLanes(){
+  lanes=[];
+  const roadRows=ROWS-SAFE_TOP_ROWS-SAFE_BOTTOM_ROWS;
+  for(let i=0;i<roadRows;i++){createLaneAtRow(SAFE_TOP_ROWS+i);}
+}
+
+function createLaneAtRow(rowIndex){
+  const yPos=rowIndex*BOX;
+  const lane={
+    rowIndex,
+    y:yPos,
+    direction:Math.random()<0.5?1:-1,
+    speed:BASE_LANE_SPEED+Math.random()*0.5,
+    cars:[]
+  };
+  if(Math.random()<0.4){
+    const startX=lane.direction===1?-BOX-rand(0,canvas.width*0.3):canvas.width+rand(0,canvas.width*0.3);
+    lane.cars.push({ x:startX, prevX:startX, emoji:CAR_EMOJIS[Math.floor(Math.random()*CAR_EMOJIS.length)] });
+  }
+  lanes.push(lane);
+}
+
+function generateNewTopLane(){
+  const topY=Math.min(...lanes.map(l=>l.y));
+  const newRowIndex=Math.round(topY/BOX)-1;
+
+  const newLane={
+    rowIndex:newRowIndex,
+    y:newRowIndex*BOX,
+    direction:Math.random()<0.5?1:-1,
+    speed:BASE_LANE_SPEED+Math.random()*0.5,
+    cars:[]
+  };
+
+  if(Math.random()<0.4){
+    const startX=newLane.direction===1?-BOX-rand(0,canvas.width*0.3):canvas.width+rand(0,canvas.width*0.3);
+    newLane.cars.push({x:startX, prevX:startX, emoji:CAR_EMOJIS[Math.floor(Math.random()*CAR_EMOJIS.length)]});
+  }
+
+  lanes.unshift(newLane); // se agrega arriba sin tocar los carriles existentes
+}
+
+// --- DRAW ---
+function draw(){
+  ctx.fillStyle='#f4e1c1'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#efe6cf';
+  ctx.fillRect(0,0,canvas.width,SAFE_TOP_ROWS*BOX);
+  ctx.fillRect(0,(ROWS-SAFE_BOTTOM_ROWS)*BOX,canvas.width,SAFE_BOTTOM_ROWS*BOX);
+
+  lanes.forEach(lane=>{
+    ctx.fillStyle='#7c7c7c'; ctx.fillRect(0,lane.y,canvas.width,BOX);
+    ctx.strokeStyle='var(--lane-line)'; ctx.lineWidth=2; ctx.setLineDash([12,12]);
+    ctx.beginPath(); ctx.moveTo(0,lane.y+BOX/2); ctx.lineTo(canvas.width,lane.y+BOX/2); ctx.stroke(); ctx.setLineDash([]);
+    lane.cars.forEach(car=>{
+      ctx.shadowColor='rgba(0,0,0,0.3)';
+      ctx.shadowBlur=6;
+      ctx.fillText(car.emoji,car.x,lane.y+4);
+      ctx.shadowBlur=0;
+    });
+  });
+
+  ctx.font=BOX+'px serif';
+  ctx.fillText(frog.emoji,frog.x,frog.y);
+  drawParticles();
+}
+
+// --- COLLISION ---
+function checkCollision(car,laneY){
+  const frogLeft=frog.x+FROG_HIT_MARGIN;
+  const frogRight=frog.x+BOX-FROG_HIT_MARGIN;
+  const frogTop=frog.y+FROG_HIT_MARGIN;
+  const frogBottom=frog.y+BOX-FROG_HIT_MARGIN;
+  const rectLeft=Math.min(car.prevX,car.x)+CAR_HIT_MARGIN;
+  const rectRight=Math.max(car.prevX+BOX,car.x+BOX)-CAR_HIT_MARGIN;
+  const rectTop=laneY+CAR_HIT_MARGIN;
+  const rectBottom=laneY+BOX-CAR_HIT_MARGIN;
+
+  if(frogRight>rectLeft&&frogLeft<rectRight&&frogBottom>rectTop&&frogTop<rectBottom){
+    createParticles(frog.x,frog.y,'red',12);
+    endGame();
+  }
+}
+
+// --- UPDATE ---
+function update(dt){
+  if(!playing) return;
+  difficultyTimer+=dt;
+  if(difficultyTimer>3000){difficultyTimer=0;lanes.forEach(l=>l.speed+=0.02);}
+
+  lanes.forEach(lane=>{
+    lane.cars.forEach(car=>{if(car.prevX===undefined) car.prevX=car.x; checkCollision(car,lane.y);});
+    lane.cars.forEach(car=>{car.prevX=car.x; car.x+=lane.speed*lane.direction;});
+    lane.cars=lane.cars.filter(c=>c.x+BOX>-BOX*2 && c.x<canvas.width+BOX*2);
+
+    const spawnChance=0.01+score*0.0004;
+    if(Math.random()<spawnChance && lane.cars.length<2){
+      const lastX=lane.direction===1?Math.max(...lane.cars.map(c=>c.x),-Infinity):Math.min(...lane.cars.map(c=>c.x),Infinity);
+      const startX=lane.direction===1?-BOX*1.5:canvas.width+BOX*0.5;
+      let ok=false;
+      if(lane.cars.length===0) ok=true;
+      else ok=lane.direction===1?(lastX-startX>MIN_GAP):(startX-lastX>MIN_GAP);
+      if(ok) lane.cars.push({x:startX, prevX:startX, emoji:CAR_EMOJIS[Math.floor(Math.random()*CAR_EMOJIS.length)]});
+    }
+  });
+
+  updateParticles();
+}
+
+// --- CONTROLES ---
+document.addEventListener('keydown',e=>{
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
+  if(!playing) return;
+  const prevY=frog.y, prevX=frog.x;
+  if(e.key==='ArrowUp') frog.y=clamp(frog.y-BOX,0,(ROWS-SAFE_BOTTOM_ROWS)*BOX);
+  if(e.key==='ArrowDown') frog.y=clamp(frog.y+BOX,0,(ROWS-SAFE_BOTTOM_ROWS)*BOX);
+  if(e.key==='ArrowLeft') frog.x=clamp(frog.x-BOX,0,(COLS-1)*BOX);
+  if(e.key==='ArrowRight') frog.x=clamp(frog.x+BOX,0,(COLS-1)*BOX);
+
+  if(prevY!==frog.y || prevX!==frog.x){
+    createParticles(frog.x,frog.y,'green',8);
+    try{S.jump.currentTime=0;S.jump.play();}catch(e){}
+  }
+
+  if(prevY>frog.y){score++;scoreEl.textContent=score;try{S.point.currentTime=0;S.point.play();}catch(e){}}
+
+  const midY=canvas.height/2;
+  if(frog.y<midY){
+    lanes.forEach(l=>l.y+=BOX); // mover todos los carriles abajo
+    generateNewTopLane();        // solo se agrega un nuevo carril arriba
+    frog.y+=BOX;
+    lanes=lanes.filter(l=>l.y<canvas.height+BOX); // eliminar carriles fuera de pantalla
+  }
+});
+
+// --- LOOP ---
+let lastTs=0;
+function loop(ts){
+  if(!playing) return;
+  const dt=ts-lastTs; lastTs=ts;
+  update(dt); draw(); raf=requestAnimationFrame(loop);
+}
+
+// --- START / END ---
+function startGame(){
+  playing=true; score=0; scoreEl.textContent=score;
+  placeFrog(); createInitialLanes(); lastTs=0;
+  if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+  startOverlay.classList.add('hidden'); endOverlay.classList.add('hidden');
+  try{S.bg.currentTime=0;S.bg.play();}catch(e){}
+}
+
+function endGame(){
+  playing=false;
+  try{S.bg.pause();S.hit.currentTime=0;S.hit.play();}catch(e){}
+  if(raf) cancelAnimationFrame(raf);
+  finalScoreEl.textContent=score; endOverlay.classList.remove('hidden');
+}
+
+startBtn.addEventListener('click',startGame);
+restartBtn.addEventListener('click',startGame);
+
+placeFrog(); createInitialLanes(); draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ping Pong Retro</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4e1c1;
+    --accent: #a37b59;
+    --dark: #5a4231;
+    --pastel: #e9d4b3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Press Start 2P', monospace;
+    background: var(--bg);
+    color: var(--dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  canvas {
+    border: 6px solid var(--accent);
+    border-radius: 12px;
+    background: linear-gradient(#f7ead3, #f0d9b3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  #overlay, #gameover {
+    position: absolute;
+    inset: 0;
+    background: rgba(244, 225, 193, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--dark);
+  }
+  #gameover h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: var(--accent);
+    text-shadow: 2px 2px var(--dark);
+   }
+
+   #gameover p {
+     font-size: 16px;
+    margin-bottom: 20px;
+   }
+  #overlay.hidden, #gameover.hidden { display: none; }
+  button {
+    font-family: 'Press Start 2P';
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    cursor: pointer;
+    box-shadow: 0 6px rgba(0,0,0,0.2);
+  }
+  #hud {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 36px;
+    color: var(--dark);
+    text-shadow: 2px 2px var(--accent);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 10px 25px;
+    border-radius: 12px;
+    border: 3px solid var(--accent);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+   }
+    .divider {
+    margin: 0 20px;
+    color: var(--accent);
+    }
+
+</style>
+</head>
+<body>
+
+<canvas id="game" width="800" height="500"></canvas>
+
+<div id="overlay">
+  <h2>PING PONG RETRO</h2>
+  <p>Usa ↑ y ↓ para mover la paleta</p>
+  <p>Primer jugador en llegar a 5 puntos gana</p>
+  <button id="startBtn">Iniciar</button>
+</div>
+
+<div id="gameover" class="hidden">
+  <h2 id="endText">GAME OVER</h2>
+  <p id="matchResult">Resultado: 0 - 0</p>
+  <button id="restartBtn">Reintentar</button>
+</div>
+
+<div id="hud">
+  <span id="playerScore">0</span>
+  <span class="divider">-</span>
+  <span id="cpuScore">0</span>
+</div>
+
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const overlay = document.getElementById("overlay");
+const gameover = document.getElementById("gameover");
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const playerScoreEl = document.getElementById("playerScore");
+const cpuScoreEl = document.getElementById("cpuScore");
+const finalScoreEl = document.getElementById("finalScore");
+const endText = document.getElementById("endText");
+const INITIAL_SPEED = 4; // velocidad base de la bola
+
+
+let player, cpu, ball;
+let playerScore = 0, cpuScore = 0, record = 0;
+let playing = false;
+
+// 🎵 Sonidos
+let bgMusic = new Audio("sounds/bg.mp3");
+bgMusic.loop = true;
+let hitSound = new Audio("sounds/hit.mp3");
+let scoreSound = new Audio("sounds/score.mp3");
+
+function init() {
+  player = { x: 30, y: canvas.height/2 - 40, w: 10, h: 80, speed: 6 };
+  cpu = { x: canvas.width - 40, y: canvas.height/2 - 40, w: 10, h: 80, speed: 4.5 };
+  ball = { x: canvas.width/2, y: canvas.height/2, r: 8, dx: INITIAL_SPEED, dy: INITIAL_SPEED };
+  playerScore = 0;
+  cpuScore = 0;
+  draw();
+}
+
+function drawRect(obj, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+}
+function drawBall() {
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#5a4231";
+  ctx.fill();
+  ctx.closePath();
+}
+function drawCenterLine() {
+  ctx.setLineDash([5, 15]);
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2, 0);
+  ctx.lineTo(canvas.width/2, canvas.height);
+  ctx.strokeStyle = "#a37b59";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+function drawHUD() {
+  playerScoreEl.textContent = playerScore;
+  cpuScoreEl.textContent = cpuScore;
+  // pequeño efecto visual
+    hud.style.transform = "translateX(-50%) scale(1.1)";
+    setTimeout(() => hud.style.transform = "translateX(-50%) scale(1)", 150);
+}
+
+function resetBall() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+
+  // Velocidad base al iniciar un nuevo punto
+  const angle = (Math.random() * 2 - 1) * Math.PI/4; // ángulo aleatorio pequeño
+  const speed = INITIAL_SPEED;
+  const direction = Math.random() < 0.5 ? 1 : -1;
+  ball.dx = speed * direction;
+  ball.dy = speed * Math.sin(angle);
+}
+
+
+function update() {
+  if (!playing) return;
+    handleInput();
+
+  // movimiento de la bola
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+  // 🔥 Aumentar la velocidad de la bola progresivamente
+  if (Math.abs(ball.dx) < 14) { // límite de velocidad máxima
+    ball.dx *= 1.0005; // cuanto más alto, más rápido acelera
+    ball.dy *= 1.0005;
+  }
+
+  
+
+
+  // rebote superior / inferior
+  if (ball.y - ball.r < 0 || ball.y + ball.r > canvas.height) {
+    ball.dy = -ball.dy;
+    hitSound.currentTime = 0;
+    hitSound.play();
+  }
+
+  // rebote en jugador
+  if (
+    ball.x - ball.r < player.x + player.w &&
+    ball.y > player.y &&
+    ball.y < player.y + player.h
+  ) {
+    ball.dx = -ball.dx;
+    ball.dy += (Math.random() - 0.5) * 2;
+    hitSound.currentTime = 0;
+    hitSound.play();
+  }
+
+  // rebote en CPU
+  if (
+    ball.x + ball.r > cpu.x &&
+    ball.y > cpu.y &&
+    ball.y < cpu.y + cpu.h
+  ) {
+    ball.dx = -ball.dx;
+    ball.dy += (Math.random() - 0.5) * 2;
+    hitSound.currentTime = 0;
+    hitSound.play();
+  }
+
+  // marcar punto
+  if (ball.x < 0) {
+    cpuScore++;
+    scoreSound.currentTime = 0;
+    scoreSound.play();
+    resetBall();
+  } else if (ball.x > canvas.width) {
+    playerScore++;
+    scoreSound.currentTime = 0;
+    scoreSound.play();
+    resetBall();
+  }
+
+  // movimiento CPU (IA sencilla)
+  if (cpu.y + cpu.h/2 < ball.y - 15) cpu.y += cpu.speed;
+  else if (cpu.y + cpu.h/2 > ball.y + 15) cpu.y -= cpu.speed;
+
+  // límites CPU
+  cpu.y = Math.max(0, Math.min(canvas.height - cpu.h, cpu.y));
+
+  // límites jugador
+  player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+
+  // comprobar victoria
+  if (playerScore >= 5 || cpuScore >= 5) endGame();
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawCenterLine();
+  drawRect(player, "#a37b59");
+  drawRect(cpu, "#a37b59");
+  drawBall();
+  drawHUD();
+}
+
+// --- Movimiento más fluido ---
+let keys = {};
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+function handleInput() {
+  if (!playing) return;
+
+  if (keys["ArrowUp"]) player.y -= player.speed;
+  if (keys["ArrowDown"]) player.y += player.speed;
+
+  // Limitar dentro del canvas
+  if (player.y < 0) player.y = 0;
+  if (player.y + player.h > canvas.height) player.y = canvas.height - player.h;
+}
+
+function startGame() {
+  overlay.classList.add("hidden");
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(() => {});
+  playing = true;
+  update();
+}
+
+function endGame() {
+  playing = false;
+  bgMusic.pause();
+  gameover.classList.remove("hidden");
+
+  const winner = playerScore > cpuScore ? "¡GANASTE!" : "PERDISTE";
+  endText.textContent = winner;
+
+  // Mostrar resultado del partido
+  const resultText = `Resultado: ${playerScore} - ${cpuScore}`;
+  document.getElementById("matchResult").textContent = resultText;
+
+  // Sonido final opcional
+  scoreSound.currentTime = 0;
+  scoreSound.play();
+}
+
+
+startBtn.addEventListener("click", () => {
+  init();
+  startGame();
+});
+restartBtn.addEventListener("click", () => {
+  gameover.classList.add("hidden");
+  init();
+  startGame();
+});
+
+init();
+</script>
+</body>
+</html>

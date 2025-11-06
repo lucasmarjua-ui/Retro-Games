@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Invaders Retro con Escudo</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;
+  --accent:#ffcc00;
+  --enemy:#ff5555;
+  --player:#00ffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Press Start 2P',monospace;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;}
+canvas{border:6px solid var(--accent);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);background:black;}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.85);z-index:50;color:white;text-align:center;}
+.hidden{display:none;}
+.btn{background:var(--accent);color:black;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-family:'Press Start 2P';}
+#hud{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.7);padding:8px 12px;border-radius:8px;border:2px solid var(--accent);z-index:60;color:white;font-size:14px;}
+</style>
+</head>
+<body>
+<canvas id="game" width="600" height="600"></canvas>
+
+<div id="start" class="overlay">
+  <h2>SPACE INVADERS RETRO</h2>
+  <p>Usa ← → para mover la nave y espacio para disparar</p>
+  <button id="startBtn" class="btn">INICIAR</button>
+</div>
+
+<div id="end" class="overlay hidden">
+  <h2>GAME OVER</h2>
+  <p>Puntos: <span id="finalScore">0</span></p>
+  <p>Record: <span id="recordScore">0</span></p>
+  <button id="restartBtn" class="btn">REINTENTAR</button>
+</div>
+
+<div id="hud">Puntos: <span id="score">0</span> | Record: <span id="record">0</span></div>
+
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const startOverlay=document.getElementById('start');
+const endOverlay=document.getElementById('end');
+const startBtn=document.getElementById('startBtn');
+const restartBtn=document.getElementById('restartBtn');
+const scoreEl=document.querySelector('#hud span');
+const recordEl=document.querySelector('#record');
+const finalScoreEl=document.getElementById('finalScore');
+const recordScoreEl=document.getElementById('recordScore');
+
+const BOX=40;
+const COLS=Math.floor(canvas.width/BOX);
+const ROWS=Math.floor(canvas.height/BOX);
+
+let playing=false, score=0, raf;
+let ship, enemies=[], bullets=[], enemyBullets=[], enemySpeed=0.5, enemyDir=1, moveTimer=0;
+let record=localStorage.getItem('spaceInvadersRecord') || 0;
+recordEl.textContent=record;
+
+let powerUps=[]; // activos
+let spawnPowerUps=[]; // en pantalla
+
+const S={
+  bg:new Audio('sounds/bg.mp3'),
+  hit:new Audio('sounds/hit.mp3'),
+  shoot:new Audio('sounds/shoot.mp3'),
+  enemyShoot:new Audio('sounds/enemyShoot.wav'),
+  power:new Audio('sounds/power.mp3')
+};
+S.bg.loop=true; S.bg.volume=0.15;
+
+// --- PARTICULAS ---
+let particles=[];
+function createParticles(x,y,color,count=8){
+  for(let i=0;i<count;i++){
+    particles.push({x:x+BOX/2,y:y+BOX/2,vx:Math.random()*4-2,vy:Math.random()*4-2,life:Math.random()*20+10,color});
+  }
+}
+function updateParticles(){particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});particles=particles.filter(p=>p.life>0);}
+function drawParticles(){particles.forEach(p=>{ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,2*Math.PI);ctx.fill();});}
+
+// --- INIT ---
+function placeShip(){ship={x:Math.floor(COLS/2)*BOX,y:(ROWS-1)*BOX,emoji:'🛸',width:BOX*0.8,height:BOX*0.8};}
+
+function createEnemies(rows=3,cols=8,startY=0){
+  enemies=[];
+  let totalWidth = cols*BOX*1.2;
+  let startX = (canvas.width - totalWidth)/2;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      enemies.push({
+        x:startX+c*BOX*1.2,
+        y:startY+r*BOX,
+        emoji:'👾',
+        alive:true,
+        respawnTimer:0,
+        width:BOX*0.8,
+        height:BOX*0.8
+      });
+    }
+  }
+}
+
+// --- DRAW ---
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // fondo estrellado
+  for(let i=0;i<100;i++){
+    ctx.fillStyle='white';
+    ctx.fillRect(Math.random()*canvas.width,Math.random()*canvas.height,1,1);
+  }
+
+  // efectos power-ups (halo)
+  powerUps.forEach(p=>{
+    if(Date.now() - p.startTime < 500){ 
+      ctx.beginPath();
+      ctx.arc(ship.x + ship.width/2, ship.y + ship.height/2, ship.width*1.2, 0, 2*Math.PI);
+      ctx.strokeStyle = p.type==='double' ? 'yellow' : p.type==='fast' ? 'cyan' : 'magenta';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+  });
+
+  // partículas
+  drawParticles();
+
+  // nave con brillo si hay power-up
+  let hasPower = powerUps.some(p=>Date.now()-p.startTime < p.duration);
+  ctx.font=ship.width+'px serif';
+  ctx.fillStyle = hasPower ? (Date.now()%500 < 250 ? 'white' : 'var(--player)') : 'var(--player)';
+  ctx.fillText(ship.emoji,ship.x,ship.y);
+
+  // escudo
+  const shieldActive = powerUps.some(p=>p.type==='shield' && Date.now()-p.startTime < p.duration);
+  if(shieldActive){
+    ctx.beginPath();
+    ctx.arc(ship.x+ship.width/2, ship.y+ship.height/2, ship.width*1.4 + Math.sin(Date.now()/100)*5, 0, 2*Math.PI);
+    ctx.strokeStyle='cyan';
+    ctx.lineWidth=4;
+    ctx.stroke();
+  }
+
+  // enemigos
+  enemies.forEach(e=>{if(e.alive){ctx.font=e.width+'px serif';ctx.fillText(e.emoji,e.x,e.y);}});
+
+  // balas jugador
+  ctx.fillStyle='var(--player)';
+  bullets.forEach(b=>ctx.fillText('|',b.x,b.y));
+
+  // balas enemigos
+  ctx.fillStyle='red';
+  enemyBullets.forEach(b=>ctx.fillText('!',b.x,b.y));
+
+  // power-ups
+  spawnPowerUps.forEach(p=>{
+    ctx.font = p.width+'px serif';
+    let emoji = '⭐';
+    if(p.type==='double') emoji='💥';
+    else if(p.type==='fast') emoji='⚡';
+    else if(p.type==='shield') emoji='🛡️';
+    ctx.fillText(emoji, p.x, p.y);
+  });
+
+  scoreEl.textContent=score;
+  recordEl.textContent=record;
+}
+
+// --- UPDATE ---
+function update(dt){
+  if(!playing) return;
+
+  moveTimer+=dt;
+
+  if(moveTimer>400){
+    moveTimer=0;
+    let shift=enemyDir*BOX*0.25;
+    let edgeHit=false;
+    enemies.forEach(e=>{
+      if(e.alive){
+        e.x+=shift;
+        e.y+=enemySpeed; // enemigos bajan más rápido
+        if(e.x<=0||e.x>=canvas.width-e.width) edgeHit=true;
+      }
+    });
+    if(edgeHit){enemyDir*=-1;}
+    enemySpeed+=0.01;
+  }
+
+  // disparos enemigos
+  enemies.forEach(e=>{
+    if(e.alive && Math.random()<0.002){
+      enemyBullets.push({x:e.x+e.width/2,y:e.y+e.height,width:6,height:10});
+      try{S.enemyShoot.currentTime=0;S.enemyShoot.play();}catch(e){}
+    }
+  });
+
+  // mover balas jugador
+  bullets.forEach(b=>b.y-=BOX*0.25);
+  bullets=bullets.filter(b=>b.y>0);
+
+  // colisiones jugador->enemigo
+  bullets.forEach((b,i)=>{
+    for(let e of enemies){
+      if(e.alive && b.x < e.x+e.width && b.x+5 > e.x && b.y < e.y+e.height && b.y+10 > e.y){
+        e.alive=false; score++; 
+        createParticles(e.x,e.y,'yellow',10);
+        bullets.splice(i,1);
+        try{S.hit.currentTime=0;S.hit.play();}catch(e){}
+        break;
+      }
+    }
+  });
+
+  // mover balas enemigos
+  enemyBullets.forEach(b=>b.y+=BOX*0.1);
+  enemyBullets=enemyBullets.filter(b=>b.y<canvas.height);
+
+  // colisiones enemigos->jugador
+  const shieldActive = powerUps.some(p=>p.type==='shield' && Date.now()-p.startTime < p.duration);
+  enemyBullets.forEach((b,i)=>{
+    if(b.x < ship.x+ship.width && b.x+b.width > ship.x && b.y < ship.y+ship.height && b.y+b.height > ship.y){
+      if(shieldActive){
+        // romper el escudo al recibir disparo
+        powerUps = powerUps.filter(p=>!(p.type==='shield'));
+        createParticles(ship.x,ship.y,'cyan',15);
+      } else {
+        endGame();
+      }
+      enemyBullets.splice(i,1);
+    }
+  });
+
+  // regenerar enemigos
+  enemies.forEach(e=>{
+    if(!e.alive){
+      e.respawnTimer+=dt;
+      if(e.respawnTimer>5000){
+        e.alive=true;
+        e.respawnTimer=0;
+        e.x=Math.random()*(canvas.width-BOX);
+        e.y=-BOX;
+      }
+    }
+  });
+
+  // generar power-ups aleatorios
+  if(Math.random()<0.001){
+    const types=['double','fast','shield'];
+    spawnPowerUps.push({
+      x:Math.random()*(canvas.width-BOX),
+      y:0,
+      type:types[Math.floor(Math.random()*types.length)],
+      width:BOX*0.8,
+      height:BOX*0.8,
+      duration:10000
+    });
+  }
+
+  // mover power-ups
+  spawnPowerUps.forEach(p=>p.y+=BOX*0.05);
+
+  // recoger power-ups y efecto visual
+  spawnPowerUps.forEach((p,i)=>{
+    if(ship.x < p.x+p.width && ship.x+ship.width > p.x && ship.y < p.y+p.height && ship.y+ship.height > p.y){
+      powerUps.push({...p,startTime:Date.now()});
+      spawnPowerUps.splice(i,1);
+      try{S.power.currentTime=0;S.power.play();}catch(e){}
+      createParticles(ship.x, ship.y, p.type==='double'?'yellow':p.type==='fast'?'cyan':'magenta', 20);
+    }
+  });
+
+  // limpiar power-ups expirados
+  powerUps = powerUps.filter(p=>Date.now()-p.startTime < p.duration);
+
+  // game over si enemigo toca nave
+  if(enemies.some(e=>e.alive && e.y+BOX>=ship.y)){
+    if(!shieldActive) endGame();
+    else createParticles(ship.x,ship.y,'cyan',15);
+  }
+
+  updateParticles();
+}
+
+// --- CONTROLES ---
+document.addEventListener('keydown', e=>{
+  if(!playing) return;
+  if(e.key==='ArrowLeft') ship.x=Math.max(0,ship.x-BOX);
+  if(e.key==='ArrowRight') ship.x=Math.min(canvas.width-BOX,ship.x+BOX);
+
+  // disparo con power-up
+  if(e.key===' '){
+    const hasDouble = powerUps.some(p=>p.type==='double' && Date.now()-p.startTime < p.duration);
+    if(hasDouble){
+      bullets.push({x:ship.x,y:ship.y-BOX,width:6,height:10});
+      bullets.push({x:ship.x+20,y:ship.y-BOX,width:6,height:10});
+    } else {
+      bullets.push({x:ship.x+ship.width/4,y:ship.y-BOX,width:6,height:10});
+    }
+    try{S.shoot.currentTime=0;S.shoot.play();}catch(e){}
+  }
+});
+
+// --- LOOP ---
+let lastTs=0;
+function loop(ts){
+  if(!playing) return;
+  const dt=ts-lastTs; lastTs=ts;
+  lastTs=ts;
+  update(dt); draw(); raf=requestAnimationFrame(loop);
+}
+
+// --- START / END ---
+function startGame(){
+  playing=true; score=0; enemySpeed=0.5; enemyDir=1; moveTimer=0;
+  ship={x:Math.floor(COLS/2)*BOX,y:(ROWS-1)*BOX,emoji:'🛸',width:BOX*0.8,height:BOX*0.8}; 
+  bullets=[]; enemyBullets=[]; enemies=[]; powerUps=[]; spawnPowerUps=[];
+  createEnemies(3,8);
+  lastTs=0;
+  startOverlay.classList.add('hidden'); endOverlay.classList.add('hidden');
+  try{S.bg.currentTime=0;S.bg.play();}catch(e){}
+  if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+
+function endGame(){
+  playing=false;
+  try{S.bg.pause();S.hit.currentTime=0;S.hit.play();}catch(e){}
+  if(score>record){record=score; localStorage.setItem('spaceInvadersRecord',record);}
+  if(raf) cancelAnimationFrame(raf);
+  finalScoreEl.textContent=score;
+  recordScoreEl.textContent=record;
+  endOverlay.classList.remove('hidden');
+}
+
+startBtn.addEventListener('click',startGame);
+restartBtn.addEventListener('click',startGame);
+</script>
+</body>
+</html>

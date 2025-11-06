@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Breakout Retro</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4e1c1;
+    --accent: #a37b59;
+    --dark: #5a4231;
+    --pastel: #e9d4b3;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Press Start 2P', monospace;
+    background: var(--bg);
+    color: var(--dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  canvas {
+    border: 6px solid var(--accent);
+    background: linear-gradient(#f7ead3, #f0d9b3);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  #overlay, #gameover {
+    position: absolute;
+    inset: 0;
+    background: rgba(244, 225, 193, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    text-align: center;
+  }
+  #overlay.hidden, #gameover.hidden { display: none; }
+  button {
+    font-family: 'Press Start 2P';
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    cursor: pointer;
+    box-shadow: 0 6px rgba(0,0,0,0.2);
+  }
+  #hud {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    font-size: 12px;
+    color: var(--dark);
+    background: rgba(255,255,255,0.7);
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+  <canvas id="game" width="800" height="600"></canvas>
+
+  <div id="overlay">
+    <h2>BREAKOUT RETRO</h2>
+    <p>Usa el ratón o ← → para mover</p>
+    <p>Presiona espacio para lanzar la bola</p>
+    <button id="startBtn">Iniciar</button>
+  </div>
+
+  <div id="gameover" class="hidden">
+    <h2 id="endText">GAME OVER</h2>
+    <p>Puntos: <span id="finalScore">0</span></p>
+    <button id="restartBtn">Reintentar</button>
+  </div>
+
+  <div id="hud">Puntos: <span id="score">0</span> | Vidas: <span id="lives">3</span> | Récord: <span id="record">0</span></div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const overlay = document.getElementById("overlay");
+const gameover = document.getElementById("gameover");
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const scoreEl = document.getElementById("score");
+const livesEl = document.getElementById("lives");
+const recordEl = document.getElementById("record");
+const finalScoreEl = document.getElementById("finalScore");
+const endText = document.getElementById("endText");
+
+let paddle, ball, bricks = [], score, lives, record, playing = false;
+
+const brickRowCount = 5;
+const brickColumnCount = 10;
+const brickWidth = 70;
+const brickHeight = 20;
+const brickPadding = 10;
+const brickOffsetTop = 50;
+const brickOffsetLeft = 35;
+const INITIAL_SPEED = 2.5; // puedes poner 3, 4, 5, lo que quieras
+let speedMultiplier = 1;
+
+let bgMusic = new Audio("sounds/bg.mp3");
+bgMusic.loop = true;
+let bounceSound = new Audio("sounds/bounce.mp3");
+let brickSound = new Audio("sounds/brick.wav");
+let gameOverSound = new Audio("sounds/gameover.mp3");
+
+function init() {
+  paddle = { x: canvas.width / 2 - 50, y: canvas.height - 30, width: 100, height: 10, speed: 8 };
+  ball = { x: canvas.width / 2, y: paddle.y - 10, radius: 8, dx: 2.5 * speedMultiplier, dy: -2.5 * speedMultiplier, stuck: true };
+  bricks = [];
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = { x: 0, y: 0, status: 1 };
+    }
+  }
+  score = 0;
+  lives = 3;
+  record = parseInt(localStorage.getItem("breakoutRecord")) || 0;
+  recordEl.textContent = record;
+  draw();
+}
+
+function drawBricks() {
+  const colors = ["#f6d6b4", "#cfe6d9", "#c6e0ef", "#e7b8c0", "#eadfc4"];
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      if (bricks[c][r].status === 1) {
+        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+        bricks[c][r].x = brickX;
+        bricks[c][r].y = brickY;
+        ctx.fillStyle = colors[r % colors.length];
+        ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+        ctx.strokeStyle = "#a37b59";
+        ctx.strokeRect(brickX, brickY, brickWidth, brickHeight);
+      }
+    }
+  }
+}
+
+function drawPaddle() {
+  ctx.fillStyle = "#a37b59";
+  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+}
+
+function drawBall() {
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#5a4231";
+  ctx.fill();
+  ctx.closePath();
+}
+
+function drawHUD() {
+  scoreEl.textContent = score;
+  livesEl.textContent = lives;
+}
+
+function collisionDetection() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      let b = bricks[c][r];
+      if (b.status === 1) {
+        // Detectar colisión
+        if (
+          ball.x > b.x &&
+          ball.x < b.x + brickWidth &&
+          ball.y > b.y &&
+          ball.y < b.y + brickHeight
+        ) {
+          ball.dy = -ball.dy;
+          b.status = 0;
+          brickSound.currentTime = 0;
+          brickSound.play();
+          score += 10;
+
+          // 🔁 Bloque se regenera tras unos segundos
+          const regenTime = 5000 + Math.random() * 5000; // entre 5 y 10 segundos
+          setTimeout(() => {
+            b.status = 1;
+          }, regenTime);
+
+          if (score > record) {
+            record = score;
+            localStorage.setItem("breakoutRecord", record);
+          }
+        }
+      }
+    }
+  }
+}
+
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBricks();
+  drawPaddle();
+  drawBall();
+  drawHUD();
+
+  if (playing) {
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+      ball.dx = -ball.dx;
+      //bounceSound.currentTime = 0; bounceSound.play();
+    }
+    if (ball.y - ball.radius < 0) {
+      ball.dy = -ball.dy;
+      bounceSound.currentTime = 0; bounceSound.play();
+    } else if (ball.y + ball.radius > canvas.height) {
+      lives--;
+      if (lives <= 0) endGame(false);
+      else {
+        ball.x = canvas.width / 2;
+        ball.y = paddle.y - 10;
+        ball.dx = 2.5 * speedMultiplier; ball.dy = -2.5 * speedMultiplier;
+        ball.stuck = true;
+      }
+    }
+
+    if (
+      ball.x > paddle.x &&
+      ball.x < paddle.x + paddle.width &&
+      ball.y + ball.radius > paddle.y
+    ) {
+      ball.dy = -ball.dy;
+      bounceSound.currentTime = 0; bounceSound.play();
+    }
+
+    collisionDetection();
+  }
+
+  if (ball.stuck) {
+    ball.x = paddle.x + paddle.width / 2;
+    ball.y = paddle.y - ball.radius;
+  }
+
+  requestAnimationFrame(draw);
+}
+
+document.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const relX = e.clientX - rect.left;
+  if (relX > 0 && relX < canvas.width) {
+    paddle.x = relX - paddle.width / 2;
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (!playing) return;
+  if (e.key === "ArrowRight" && paddle.x < canvas.width - paddle.width) paddle.x += paddle.speed;
+  else if (e.key === "ArrowLeft" && paddle.x > 0) paddle.x -= paddle.speed;
+  else if (e.key === " ") ball.stuck = false;
+});
+
+function startGame() {
+  overlay.classList.add("hidden");
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(() => {});
+  playing = true;
+  setInterval(() => {
+    if (!playing) return; // no aumenta si el juego está en pausa o game over
+    speedMultiplier += 0.05; // +5% de velocidad cada 10 segundos
+    ball.dx *= 1.05;
+    ball.dy *= 1.05;
+  }, 10000); // cada 10 segundos
+}
+
+function endGame(win) {
+  playing = false;
+  bgMusic.pause();
+  gameover.classList.remove("hidden");
+  endText.textContent = win ? "¡GANASTE!" : "GAME OVER";
+  finalScoreEl.textContent = score;
+  gameOverSound.play();
+}
+
+startBtn.addEventListener("click", () => {
+  init();
+  startGame();
+});
+
+restartBtn.addEventListener("click", () => {
+  gameover.classList.add("hidden");
+  init();
+  startGame();
+});
+
+init();
+</script>
+</body>
+</html>

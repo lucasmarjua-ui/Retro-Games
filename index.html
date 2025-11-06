@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Arcade Vintage</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🎮 Retro Arcade 🎮</h1>
+    </header>
+
+    <main class="game-grid">
+        <div class="game-card" data-game="games/pinball/juego1.html">
+            <img src="images/juego1.png" alt="Juego 1">
+        </div>
+        <div class="game-card" data-game="games/car/index.html">
+            <img src="images/juego2.png" alt="Juego 2">
+        </div>
+        <div class="game-card" data-game="games/breakout/index.html">
+            <img src="images/juego3.png" alt="Juego 3">
+        </div>
+        <div class="game-card" data-game="games/pong/index.html">
+            <img src="images/juego4.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/snake/index.html">
+            <img src="images/juego5.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/frogger/index.html">
+            <img src="images/Juego6.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/spaceinvaders/index.html">
+            <img src="images/Juego7.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/tetris/index.html">
+            <img src="images/Juego8.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/memory/index.html">
+            <img src="images/Juego9.png" alt="Juego 4">
+        </div>
+        <div class="game-card" data-game="games/whacamole/index.html">
+            <img src="images/Juego10.png" alt="Juego 4">
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="gameModal">
+        <div class="modal-content">
+            <span id="closeModal">&times;</span>
+            <div class="crt-overlay"></div>
+            <iframe id="gameFrame" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+    
+
+    <script src="script.js"></script>
+</body>
+</html>
