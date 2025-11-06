@@ -1,6 +1,24 @@
 const modal = document.getElementById('gameModal');
 const gameFrame = document.getElementById('gameFrame');
 const closeModal = document.getElementById('closeModal');
+async function saveAchievement(userName, achievementName, score) {
+  const { data, error } = await supabase
+    .from("achievements")
+    .insert([
+      {
+        user_id: userName,
+        achievement: achievementName,
+        score: score,
+      }
+    ]);
+
+  if (error) {
+    console.error("❌ Error guardando el logro:", error);
+  } else {
+    console.log("✅ Logro guardado:", data);
+  }
+}
+
 
 document.querySelectorAll('.game-card').forEach(card => {
     card.addEventListener('click', () => {
