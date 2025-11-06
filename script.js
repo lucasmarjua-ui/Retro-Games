@@ -84,4 +84,10 @@ if (savedUser) {
     loginBox.style.display = "none";
   }
 }
+// BOTONES DEL PANEL SUPERIOR
+document.getElementById("achBtn").onclick = () => RG.openAchievementsPanel();
+document.getElementById("rankBtn").onclick = () => RG.openLeaderboard("global");
+document.getElementById("openLoginBtn").onclick = () => {
+    document.getElementById("loginBox").style.display = "flex";
+};
 
