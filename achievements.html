@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Logros | Retro Games</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h1>🏆 Tus logros desbloqueados</h1>
+    <h3 id="playerName"></h3>
+
+    <ul id="achievementsList" class="card-list"></ul>
+
+    <a href="index.html" class="btn">Volver al menú</a>
+  </div>
+
+  <script type="module">
+    import { supabase } from "./js/supabaseClient.js";
+
+    const username = localStorage.getItem("retro-username");
+    document.getElementById("playerName").innerText = `Jugador: ${username}`;
+
+    async function loadAchievements() {
+      const { data, error } = await supabase
+        .from("achievements")
+        .select("*")
+        .eq("user_id", username)
+        .order("created_at", { ascending: false });
+
+      const list = document.getElementById("achievementsList");
+      list.innerHTML = "";
+
+      if (data.length === 0) {
+        list.innerHTML = "<p>Todavía no has desbloqueado logros 😢</p>";
+        return;
+      }
+
+      data.forEach(row => {
+        const li = document.createElement("li");
+        li.classList.add("achievement-card");
+        li.innerHTML = `
+          <span class="emoji">✅</span>
+          <strong>${row.achievement}</strong>
+          <small>${new Date(row.created_at).toLocaleString()}</small>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    loadAchievements();
+  </script>
+</body>
+</html>
