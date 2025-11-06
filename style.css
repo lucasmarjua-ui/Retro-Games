@@ -234,3 +234,36 @@ header h1 {
   box-shadow:0 6px 14px rgba(0,0,0,0.35);
 }
 
+/* 🔥 PANEL SUPERIOR FIJO 🔥 */
+#uiPanel {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    z-index: 99999;
+}
+
+#uiPanel .btn {
+    background: black;
+    color: #ffcc00;
+    border: 2px solid #ffcc00;
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Press Start 2P", monospace;
+    transition: 0.2s;
+}
+
+#uiPanel .btn:hover {
+    background: #ffcc00;
+    color: black;
+}
+
+#playerName {
+    color: white;
+    font-size: 11px;
+    font-family: "Press Start 2P", monospace;
+}
