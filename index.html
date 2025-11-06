@@ -114,67 +114,21 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* -------------- Utilidades de UI --------------- */
-const loginModal = document.getElementById('loginModal');
-const openLoginBtn = document.getElementById('openLoginBtn');
-const closeLogin = document.getElementById('closeLogin');
-const saveLogin = document.getElementById('saveLogin');
-const loginName = document.getElementById('loginName');
-const playerNameEl = document.getElementById('playerName');
+const loginBtn = document.getElementById("loginButton");
+const usernameField = document.getElementById("usernameInput");
 
-const achievementPopup = document.getElementById('achievementPopup');
-const achievementsPanel = document.getElementById('achievementsPanel');
-const achievementsList = document.getElementById('achievementsList');
-const closeAchievements = document.getElementById('closeAchievements');
+loginBtn.addEventListener("click", () => {
+    const name = usernameField.value.trim();
 
-const leaderboardPanel = document.getElementById('leaderboardPanel');
-const leaderboardContent = document.getElementById('leaderboardContent');
-const closeLeaderboard = document.getElementById('closeLeaderboard');
+    if (name === "") {
+      alert("⚠️ Debes escribir un nombre");
+      return;
+    }
 
-openLoginBtn.onclick = () => { loginModal.classList.remove('hidden'); loginModal.style.display='flex'; };
-closeLogin.onclick = () => { loginModal.classList.add('hidden'); loginModal.style.display='none'; };
-closeAchievements.onclick = () => { achievementsPanel.classList.add('hidden'); };
-closeLeaderboard.onclick = () => { leaderboardPanel.classList.add('hidden'); };
+    localStorage.setItem("retro-username", name);
+    location.reload();
+});
 
-/* -------------- Estado local ---------------- */
-let PLAYER = {
-  id: null,       // uuid
-  username: null
-};
-
-/* Cargar jugador desde localStorage */
-function loadPlayer() {
-  const raw = localStorage.getItem('rg_player');
-  if (raw) {
-    PLAYER = JSON.parse(raw);
-    playerNameEl.textContent = PLAYER.username ? `👤 ${PLAYER.username}` : '';
-  }
-}
-loadPlayer();
-
-/* Guardar jugador local y en Supabase (upsert) */
-async function savePlayer(name) {
-  name = name.trim().substring(0, 24) || 'Jugador';
-  // si ya tenemos id -> usar, si no generar uuid
-  let id = PLAYER.id || crypto.randomUUID();
-  PLAYER = { id, username: name };
-  localStorage.setItem('rg_player', JSON.stringify(PLAYER));
-  playerNameEl.textContent = `👤 ${name}`;
-  // Upsert en Supabase users
-  try {
-    await supabase
-      .from('users')
-      .upsert([{ id: PLAYER.id, username: PLAYER.username }], { onConflict: 'id' });
-  } catch (e) {
-    console.warn('Supabase user upsert error', e);
-  }
-}
-
-/* Botón guardar login */
-saveLogin.onclick = async () => {
-  const name = loginName.value || 'Jugador';
-  await savePlayer(name);
-  loginModal.classList.add('hidden');
-};
 
 /* Si no hay player, abrir login */
 if (!PLAYER.id || !PLAYER.username) {
