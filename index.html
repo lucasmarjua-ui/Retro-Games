@@ -17,6 +17,14 @@
 </head>
 <body>
     <header>
+        <!-- PANEL FIJO SUPERIOR DERECHA -->
+<div id="uiPanel">
+    <button id="openLoginBtn" class="btn">👤 Identifícate</button>
+    <button id="achBtn" class="btn">🏆 Arcade Awards</button>
+    <button id="rankBtn" class="btn">📊 Ranking Global</button>
+    <span id="playerName"></span>
+</div>
+
         <h1>🎮 Retro Arcade 🎮</h1>
     </header>
 
@@ -67,31 +75,6 @@
   <button id="openLoginBtn" class="btn">Identifícate</button>
   <span id="playerName" style="margin-left:8px;"></span>
 </div>
-
-<!-- Popup logro -->
-<div id="achievementPopup" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:none;padding:12px;border:3px solid #a0522d;background:#fff3e0;border-radius:8px;font-family:'Press Start 2P';"></div>
-
-<!-- Panel Logros -->
-<div id="achievementsPanel" class="overlay hidden">
-  <h2>Arcade Awards</h2>
-  <ul id="achievementsList" style="list-style:none;padding:0;"></ul>
-  <button id="closeAchievements" class="btn">Cerrar</button>
-</div>
-
-<!-- Panel Ranking -->
-<div id="leaderboardPanel" class="overlay hidden">
-  <h2>Ranking Global</h2>
-  <div id="leaderboardContent"></div>
-  <button id="closeLeaderboard" class="btn">Cerrar</button>
-</div>
-
-<!-- Modal Login -->
-<div id="loginBox">
-  <input id="usernameInput" type="text" placeholder="Escribe tu nombre...">
-  <button id="loginButton">Identifícate</button>
-</div>
-
-<h3 id="welcomeUser"></h3>
 
 
 
