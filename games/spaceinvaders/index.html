@@ -333,6 +333,10 @@ function endGame(){
   recordScoreEl.textContent=record;
   endOverlay.classList.remove('hidden');
 }
+  if (score >= 1000) {
+  saveAchievement(playerName, "🚀 Space Shooter — 1000 puntos", score);
+}
+
 
 startBtn.addEventListener('click',startGame);
 restartBtn.addEventListener('click',startGame);
