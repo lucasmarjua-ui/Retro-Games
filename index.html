@@ -1,276 +1,113 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta name="google-site-verification" content="6zd91WNH2MqWQZZNIHkQ3hzF7qeCTlM1tNhQyR2EKYU" />
-    <meta name="keywords" content="retro games, juegos retro, arcade online, tetris, snake, breakout, juegos gratis">
-    <link rel="canonical" href="https://retrogames.ink">
-    <meta name="robots" content="index, follow">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Juega a los mejores juegos retro online gratis. Breakout, Space Invaders, Snake, Tetris y muchos más. Sin descargas.">
-    <title>Retro Games • Juegos Retro Online Gratis</title>
-    <link rel="stylesheet" href="style.css">
-   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8061529160315518"
-     crossorigin="anonymous"></script>
+  <meta charset="UTF-8">
+  <meta name="google-site-verification" content="6zd91WNH2MqWQZZNIHkQ3hzF7qeCTlM1tNhQyR2EKYU" />
+  <meta name="keywords" content="retro games, juegos retro, arcade online, tetris, snake, breakout, juegos gratis">
+  <link rel="canonical" href="https://retrogames.ink">
+  <meta name="robots" content="index, follow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Juega a los mejores juegos retro online gratis. Breakout, Space Invaders, Snake, Tetris y muchos más. Sin descargas.">
+  <title>Retro Games • Juegos Retro Online Gratis</title>
+  <link rel="stylesheet" href="style.css">
 
-
+  <!-- Google AdSense (mantén tu client id real) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8061529160315518"
+    crossorigin="anonymous"></script>
 </head>
 <body>
-    <header>
-<!-- ✅ PANEL FIJO SUPERIOR DERECHA -->
-<div id="uiPanel">
-    <button class="retroBtn" id="openLoginBtn">👤 Identifícate</button>
-    <button class="retroBtn" id="openAchievementsBtn">🏆 Arcade Awards</button>
-    <button class="retroBtn" id="openRankingBtn">📊 Ranking Global</button>
-    <span id="playerName"></span>
-</div>
-
-
-        <h1>🎮 Retro Arcade 🎮</h1>
-    </header>
-
-    <main class="game-grid">
-        <div class="game-card" data-game="games/pinball/juego1.html">
-            <img src="images/Juego1.png" alt="Juego 1">
-        </div>
-        <div class="game-card" data-game="games/car/index.html">
-            <img src="images/Juego2.png" alt="Juego 2">
-        </div>
-        <div class="game-card" data-game="games/breakout/index.html">
-            <img src="images/Juego3.png" alt="Juego 3">
-        </div>
-        <div class="game-card" data-game="games/pong/index.html">
-            <img src="images/Juego4.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/snake/index.html">
-            <img src="images/Juego5.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/frogger/index.html">
-            <img src="images/Juego6.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/spaceinvaders/index.html">
-            <img src="images/Juego7.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/tetris/index.html">
-            <img src="images/Juego8.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/memory/index.html">
-            <img src="images/Juego9.png" alt="Juego 4">
-        </div>
-        <div class="game-card" data-game="games/whacamole/index.html">
-            <img src="images/Juego10.png" alt="Juego 4">
-        </div>
-        
-    </main>
-
-    <!-- Modal -->
-    <div id="gameModal">
-        <div class="modal-content">
-            <span id="closeModal">&times;</span>
-            <div class="crt-overlay"></div>
-            <iframe id="gameFrame" src="" frameborder="0"></iframe>
-        </div>
+  <header>
+    <!-- PANEL SUPERIOR: login / logros / ranking -->
+    <div id="uiPanel">
+      <button class="retroBtn" id="openLoginBtn">👤 Identifícate</button>
+      <button class="retroBtn" id="openAchievementsBtn">🏆 Arcade Awards</button>
+      <button class="retroBtn" id="openRankingBtn">📊 Ranking Global</button>
+      <span id="playerName"></span>
     </div>
-    <!-- Login / Perfil minimal -->
-<div id="playerPanel" style="position:fixed;top:12px;right:12px;z-index:999;">
-  <button id="openLoginBtn" class="btn">Identifícate</button>
-  <span id="playerName" style="margin-left:8px;"></span>
-</div>
 
+    <h1>🎮 Retro Arcade 🎮</h1>
+  </header>
 
+  <main class="game-grid">
+    <div class="game-card" data-game="games/pinball/juego1.html">
+      <img src="images/Juego1.png" alt="Juego 1">
+    </div>
+    <div class="game-card" data-game="games/car/index.html">
+      <img src="images/Juego2.png" alt="Juego 2">
+    </div>
+    <div class="game-card" data-game="games/breakout/index.html">
+      <img src="images/Juego3.png" alt="Juego 3">
+    </div>
+    <div class="game-card" data-game="games/pong/index.html">
+      <img src="images/Juego4.png" alt="Juego 4">
+    </div>
+    <div class="game-card" data-game="games/snake/index.html">
+      <img src="images/Juego5.png" alt="Juego 5">
+    </div>
+    <div class="game-card" data-game="games/frogger/index.html">
+      <img src="images/Juego6.png" alt="Juego 6">
+    </div>
+    <div class="game-card" data-game="games/spaceinvaders/index.html">
+      <img src="images/Juego7.png" alt="Juego 7">
+    </div>
+    <div class="game-card" data-game="games/tetris/index.html">
+      <img src="images/Juego8.png" alt="Juego 8">
+    </div>
+    <div class="game-card" data-game="games/memory/index.html">
+      <img src="images/Juego9.png" alt="Juego 9">
+    </div>
+    <div class="game-card" data-game="games/whacamole/index.html">
+      <img src="images/Juego10.png" alt="Juego 10">
+    </div>
+  </main>
 
-    <script src="script.js"></script>
-    <!-- BLOQUE DE ANUNCIO -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-TU-ID-AQUI"
-     data-ad-slot="1234567890"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script type="module">
-/* -------------- CONFIG ----------------- */
-const SUPABASE_URL = 'https://gowgclioxsdmgugmydmv.supabase.co'; // pon tu URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdvd2djbGlveHNkbWd1Z215ZG12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0MzAwMjUsImV4cCI6MjA3ODAwNjAyNX0.tHXcV_Ks351TZBdfTCQbo0QQxumi8QUFlJLP8Vu8H2Y'; // pon tu anon key
+  <!-- Modal del juego -->
+  <div id="gameModal" aria-hidden="true">
+    <div class="modal-content">
+      <span id="closeModal" title="Cerrar">×</span>
+      <div class="crt-overlay"></div>
+      <iframe id="gameFrame" src="" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </div>
 
-/* -------------- Supabase client (lite) --------------- */
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  <!-- POPUP LOGRO -->
+  <div id="achievementPopup" style="display:none"></div>
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <!-- PANEL LOGROS (oculto por defecto) -->
+  <div id="achievementsPanel" class="panel" style="display:none">
+    <h3>🏆 Arcade Awards</h3>
+    <ul id="achievementsList" style="list-style:none;padding:0;margin:0;"></ul>
+    <button id="closeAchievements" class="retroBtn">Cerrar</button>
+  </div>
 
-/* -------------- Utilidades de UI --------------- */
-const loginBtn = document.getElementById("loginButton");
-const usernameField = document.getElementById("usernameInput");
+  <!-- PANEL RANKING (oculto por defecto) -->
+  <div id="leaderboardPanel" class="panel" style="display:none">
+    <h3>📊 Ranking Global</h3>
+    <div id="leaderboardContent"></div>
+    <button id="closeLeaderboard" class="retroBtn">Cerrar</button>
+  </div>
 
-loginBtn.addEventListener("click", () => {
-    const name = usernameField.value.trim();
+  <!-- LOGIN SIMPLE (oculto por defecto) -->
+  <div id="loginBox" style="display:none; position:fixed; top:80px; right:15px; z-index:10001; background:var(--secondary-color); padding:12px; border:3px solid #A78B5B; border-radius:8px;">
+    <input id="usernameInput" placeholder="Tu nombre (ej: Lucas)" style="width:200px; padding:6px; font-family:'Press Start 2P'; font-size:10px;">
+    <div style="margin-top:8px; display:flex; gap:8px;">
+      <button id="loginButton" class="retroBtn">Guardar</button>
+      <button id="cancelLogin" class="retroBtn">Cancelar</button>
+    </div>
+  </div>
 
-    if (name === "") {
-      alert("⚠️ Debes escribir un nombre");
-      return;
-    }
+  <!-- carga cliente supabase (module) -->
+  <script type="module" src="supabaseClient.js"></script>
+  <!-- script principal (usa window.supabase) -->
+  <script src="script.js"></script>
 
-    localStorage.setItem("retro-username", name);
-    location.reload();
-});
-
-
-/* Si no hay player, abrir login */
-if (!PLAYER.id || !PLAYER.username) {
-  loginModal.classList.remove('hidden');
-  loginModal.style.display='flex';
-}
-
-/* -------------- ACHIEVEMENTS (local + sync) ---------------- */
-
-const ACHIEVEMENTS = [
-  { id: 'first_play', name: 'Primer Jugador', description: 'Juega 1 partida', game_id: 'global' },
-  { id: 'score_100', name: '100 puntos', description: 'Consigue 100 puntos en cualquier juego', game_id: 'global' },
-  { id: 'pinball_master', name: 'Maestro Pinball', description: '5000 puntos en Pinball', game_id: 'pinball' },
-  { id: 'snake_xl', name: 'Serpiente XL', description: '30 segmentos en Snake', game_id: 'snake' },
-  // añade los que quieras...
-];
-
-function getUnlockedLocal() {
-  try {
-    return JSON.parse(localStorage.getItem('rg_achievements') || '[]');
-  } catch { return []; }
-}
-function setUnlockedLocal(list) {
-  localStorage.setItem('rg_achievements', JSON.stringify(list));
-}
-
-/* Muestra popup logro */
-function showAchievementPopup(ach) {
-  achievementPopup.innerHTML = `🏆 <strong>${ach.name}</strong><br><small>${ach.description}</small>`;
-  achievementPopup.style.display = 'block';
-  achievementPopup.style.opacity = '1';
-  setTimeout(()=> {
-    achievementPopup.style.transition = 'opacity 0.6s';
-    achievementPopup.style.opacity = '0';
-    setTimeout(()=> achievementPopup.style.display='none', 600);
-  }, 2200);
-}
-
-/* Desbloquear logro localmente y en supabase */
-async function unlockAchievement(achievementId, extra = {}) {
-  const ach = ACHIEVEMENTS.find(a => a.id === achievementId);
-  if(!ach) return;
-  const unlocked = getUnlockedLocal();
-  if(unlocked.includes(achievementId)) return; // ya desbloqueado
-
-  unlocked.push(achievementId);
-  setUnlockedLocal(unlocked);
-  showAchievementPopup(ach);
-
-  // Sincronizar con Supabase (registro global)
-  if (PLAYER && PLAYER.id) {
-    try {
-      await supabase.from('achievements_unlocked').insert([{
-        user_id: PLAYER.id,
-        username: PLAYER.username,
-        achievement_id: ach.id,
-        achievement_name: ach.name,
-        game_id: ach.game_id
-      }]);
-    } catch (e) {
-      console.warn('Error sync achievement', e);
-    }
-  }
-}
-
-/* Mostrar panel de logros */
-function openAchievementsPanel() {
-  achievementsList.innerHTML = '';
-  const unlocked = getUnlockedLocal();
-  ACHIEVEMENTS.forEach(a => {
-    const li = document.createElement('li');
-    li.innerHTML = `${unlocked.includes(a.id) ? '✅' : '❌'} <strong>${a.name}</strong> - <small>${a.description}</small>`;
-    achievementsList.appendChild(li);
-  });
-  achievementsPanel.classList.remove('hidden');
-}
-
-/* -------------- LEADERBOARD / SCORE SYNC ---------------- */
-
-/**
- * submitScore(gameId, score)
- * - Inserta score en Supabase
- * - Llama a unlockAchievement si corresponde
- */
-async function submitScore(gameId, score) {
-  // Guardar local: opcional
-  try {
-    await supabase.from('scores').insert([{
-      user_id: PLAYER.id,
-      username: PLAYER.username,
-      game_id: gameId,
-      score: score
-    }]);
-  } catch (e) {
-    console.warn('Error enviar score', e);
-  }
-
-  // Ejemplo: chequear logros globales
-  if (score >= 100) await unlockAchievement('score_100');
-  if (gameId === 'pinball' && score >= 5000) await unlockAchievement('pinball_master');
-  if (gameId === 'snake' && score >= 30) await unlockAchievement('snake_xl');
-}
-
-/* Obtener top N para un juego */
-async function fetchLeaderboard(gameId, limit = 10) {
-  try {
-    const { data, error } = await supabase
-      .from('scores')
-      .select('username, score, created_at')
-      .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .limit(limit);
-    if (error) throw error;
-    return data || [];
-  } catch (e) {
-    console.warn('fetchLeaderboard error', e);
-    return [];
-  }
-}
-
-/* Mostrar panel del leaderboard */
-async function openLeaderboard(gameId) {
-  const list = await fetchLeaderboard(gameId);
-  leaderboardContent.innerHTML = `<h3>${gameId.toUpperCase()}</h3>`;
-  const table = document.createElement('ol');
-  list.forEach(row => {
-    const li = document.createElement('li');
-    li.innerHTML = `${row.username || 'Anon'} — <strong>${row.score}</strong>`;
-    table.appendChild(li);
-  });
-  leaderboardContent.appendChild(table);
-  leaderboardPanel.classList.remove('hidden');
-}
-
-/* -------------- Helpers para integrar en tus juegos ------------- */
-
-/* Llamar esto cuando termina una partida:
-   submitScore('pinball', 1200)
-*/
-window.RG = {
-  submitScore,
-  unlockAchievement,
-  openAchievementsPanel,
-  openLeaderboard,
-  savePlayer // permite cambiar nombre
-};
-
-/* -------------- Inicialización visual -------------- */
-document.addEventListener('DOMContentLoaded', () => {
-  loadPlayer();
-  // Actualiza el nombre si ya está
-  if (PLAYER.username) playerNameEl.textContent = `👤 ${PLAYER.username}`;
-  // Atachar botones (si los tienes en el menú)
-  // Ejemplo: document.getElementById('achBtn').onclick = () => openAchievementsPanel();
-});
-    (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-
-    
+  <!-- AdSense placeholder (mantén, Google puede tardar en mostrar) -->
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-TU-ID-AQUI"
+       data-ad-slot="1234567890"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </body>
 </html>
