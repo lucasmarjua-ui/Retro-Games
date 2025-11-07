@@ -1,58 +1,70 @@
-console.log("✅ script.js cargado");
+console.log("✅ script.js cargado correctamente");
 
 // ===================== LOGIN ======================
-
-const username = localStorage.getItem("retro-username");
+const openLoginBtn = document.getElementById("openLoginBtn");
+const loginBox = document.getElementById("loginBox");
+const loginButton = document.getElementById("loginButton");
+const cancelLogin = document.getElementById("cancelLogin");
+const usernameInput = document.getElementById("usernameInput");
 const playerName = document.getElementById("playerName");
 
-// ✅ Mostrar nombre si ya existe
-if (username) {
-  playerName.textContent = `👤 ${username}`;
+// Mostrar nombre si ya estaba guardado
+const storedUser = localStorage.getItem("retro-username");
+if (storedUser) {
+  playerName.textContent = `👤 ${storedUser}`;
 }
 
-// ✅ Botón: Identificarse
-document.getElementById("openLoginBtn").addEventListener("click", () => {
-  const newName = prompt("Escribe tu nombre:");
+// Abrir panel de login
+openLoginBtn.addEventListener("click", () => {
+  loginBox.style.display = "block";
+});
 
-  if (!newName || newName.length < 2) {
-    alert("⚠️ Debes escribir un nombre válido");
+// Guardar usuario
+loginButton.addEventListener("click", () => {
+  const newUser = usernameInput.value.trim();
+
+  if (newUser.length < 2) {
+    alert("⚠️ El nombre debe tener al menos 2 caracteres.");
     return;
   }
 
-  localStorage.setItem("retro-username", newName);
-  playerName.textContent = `👤 ${newName}`;
+  localStorage.setItem("retro-username", newUser);
+  playerName.textContent = `👤 ${newUser}`;
+  loginBox.style.display = "none";
 });
 
-// ===================== ACHIEVEMENTS ======================
+// Cancelar login
+cancelLogin.addEventListener("click", () => {
+  loginBox.style.display = "none";
+});
 
-window.openAchievementsPanel = () => {
+
+// ===================== NAV: ACHIEVEMENTS / RANKING ======================
+document.getElementById("openAchievementsBtn").addEventListener("click", () => {
   window.location.href = "achievements.html";
-};
-btnAchievements.addEventListener("click", () => {
-    window.location.href = "achievements.html";
 });
-// ===================== RANKING ======================
 
-window.openLeaderboard = () => {
+document.getElementById("openRankingBtn").addEventListener("click", () => {
   window.location.href = "ranking.html";
-};
-btnRanking.addEventListener("click", () => {
-    window.location.href = "ranking.html";
 });
-// ===================== MODAL DE JUEGOS ======================
 
+// ===================== MODAL DE JUEGOS ======================
 const modal = document.getElementById("gameModal");
 const gameFrame = document.getElementById("gameFrame");
 const closeModal = document.getElementById("closeModal");
 
+// Abrir modal al hacer clic en una tarjeta
 document.querySelectorAll(".game-card").forEach(card => {
   card.addEventListener("click", () => {
-    gameFrame.src = card.getAttribute("data-game");
+    gameFrame.src = card.dataset.game;
     modal.style.display = "flex";
   });
 });
 
+// Cerrar modal
 closeModal.addEventListener("click", () => {
   modal.style.display = "none";
   gameFrame.src = "";
+});
+
 });
